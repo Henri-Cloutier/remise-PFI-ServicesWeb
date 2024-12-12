@@ -1,0 +1,13 @@
+.smallUser{
+    display: grid;
+    grid-template-columns: 60px auto;
+    align-items: center;
+}
+.userLine{
+    display: grid;
+    grid-template-columns: auto 50px 50px 50px;
+}
+.smallAvatar{
+    height: 40px;
+    width: 40px;
+}
