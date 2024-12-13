@@ -130,13 +130,13 @@ export const LIKE_EndPoint = function (HttpContext) {
             return true;
         }
     }
-    else if(HttpContext.req.url == '/likes/RemoveLike' && HttpContext.req.method == "GET"){
+    else if(HttpContext.req.url == '/likes/RemoveLike' && HttpContext.req.method == "DELETE"){
         try {
             let likesController = new LikesController(HttpContext);
             if (HttpContext.payload)
                 likesController.RemoveLike(HttpContext.payload);
             else
-                HttpContext.response.badRequest();
+                HttpContext.response.badRequest("No payload");
             return true;
         } catch (error) {
             console.log("Likes_EndPoint Error message: \n", error.message);
@@ -148,8 +148,9 @@ export const LIKE_EndPoint = function (HttpContext) {
     else if(HttpContext.req.url.includes('/likes/GetLikes') && HttpContext.req.method == "GET"){
         try {
             let likesController = new LikesController(HttpContext);
-            if (HttpContext.payload)
+            if (HttpContext.payload){
                 likesController.GetLikes(HttpContext.payload);
+            }
             else
                 HttpContext.response.badRequest();
             return true;

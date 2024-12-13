@@ -2,7 +2,7 @@
 class Posts_API {
     static Host_URL() { return "http://localhost:5000"; }
     static API_URL() { return this.Host_URL() + "/api/posts" };
-
+    static LIKES_URL() { return this.Host_URL() + "/likes" };
     static initHttpState() {
         this.currentHttpError = "";
         this.currentStatus = 0;
@@ -77,6 +77,49 @@ class Posts_API {
                 error: (xhr) => {
                     Posts_API.setHttpErrorState(xhr); resolve(null);
                 }
+            });
+        });
+    }
+    static async GetLikes(id) {
+        Posts_API.initHttpState();
+        return new Promise(resolve => {
+            $.ajax({
+                url: this.LIKES_URL() + "/GetLikes?postId=" + id,
+                type:"GET",
+                complete: data => { resolve(data.responseJSON); },
+                error: (xhr) => { Posts_API.setHttpErrorState(xhr); resolve(null); }
+            });
+        });
+    }
+    static async Like(data,token) {
+        Posts_API.initHttpState();
+        return new Promise(resolve => {
+            $.ajax({
+                url: this.LIKES_URL() + "/AddLike",
+                type: "POST",
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                headers: {
+                    authorization: token.Access_token,
+                },
+                success: (data) => { resolve(data); },
+                error: (xhr) => { Posts_API.setHttpErrorState(xhr); resolve(null); }
+            });
+        });
+    }
+    static async Unlike(data,token) {
+        Posts_API.initHttpState();
+        return new Promise(resolve => {
+            $.ajax({
+                url: this.LIKES_URL() + "/RemoveLike",
+                type: "DELETE",
+                contentType: 'application/json',
+                data: JSON.stringify(data),
+                headers: {
+                    authorization: token.Access_token,
+                },
+                success: (data) => { resolve(data); },
+                error: (xhr) => { Posts_API.setHttpErrorState(xhr); resolve(null); }
             });
         });
     }

@@ -212,5 +212,6 @@ export default class AccountsController extends Controller {
             this.repository.remove(id);
             this.HttpContext.response.accepted();
         }
+        this.HttpContext.response.unAuthorized();
     }
 }

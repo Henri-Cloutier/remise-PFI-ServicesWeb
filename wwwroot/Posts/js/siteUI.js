@@ -18,7 +18,7 @@ let waiting = null;
 let showKeywords = false;
 let keywordsOnchangeTimger = null;
 
-let userToken = null;
+let userToken = JSON.parse(sessionStorage.getItem("token"));
 
 Init_UI();
 async function Init_UI() {
@@ -62,7 +62,8 @@ function VerifyIconValidity() {
     $("#connect").hide();
     $("#createPost").show();
     $("#userProfile").attr("src", userToken.User.Avatar);
-    if(userToken.User.isAdmin || userToken.User.isSuper) $("#createPost").show();
+    if (userToken.User.isAdmin || userToken.User.isSuper)
+      $("#createPost").show();
     else $("#createPost").hide();
   } else {
     $("#createPost").hide();
@@ -264,24 +265,56 @@ async function renderPosts(queryString) {
 }
 function renderPost(post) {
   let date = convertToFrenchDate(UTC_To_Local(post.Date));
+
   let crudIcon = "";
   if (userToken != null) {
     if (userToken.User.Id == post.userId || userToken.User.isSuper) {
       crudIcon += `
         <span class="editCmd cmdIconSmall fa fa-pencil" postId="${post.Id}" title="Modifier nouvelle"></span>
         `;
-    }
-    if (userToken.User.Id == post.userId || userToken.User.isAdmin || userToken.User.isSuper)
+    } else crudIcon += `<div></div>`;
+    if (
+      userToken.User.Id == post.userId ||
+      userToken.User.isAdmin ||
+      userToken.User.isSuper
+    )
       crudIcon += `
             <span class="deleteCmd cmdIconSmall fa fa-trash" postId="${post.Id}" title="Effacer nouvelle"></span>
             `;
+    else crudIcon += `<div></div>`;
   }
-
+  if (crudIcon == "") crudIcon = `<div></div><div></div>`;
+  let likeDisplay = "";
+  Posts_API.GetLikes(post.Id).then((likes) => {
+    let likeString = "";
+    let likeStyle = "fa-regular fa-thumbs-up";
+    likes.forEach((like) => {
+      likeString += like.userName + "\r\n";
+      if (userToken != null && like.userName == userToken.User.Name)
+        likeStyle = "fa-solid fa-thumbs-up";
+    });
+    $(`#${post.Id}like`).html(
+      `<i class="${likeStyle}" postId="${post.Id}" title="${likeString}"></i> ${likes.length}`
+    );
+    if(userToken != null) {
+      if(likeStyle == "fa-solid fa-thumbs-up") {
+        $(`#${post.Id}like`).on("click", function () {
+          Posts_API.Unlike({postId: post.Id, userId: userToken.User.Id}, userToken);
+        });
+      }
+      else{
+        $(`#${post.Id}like`).on("click", function () {
+          Posts_API.Like({postId: post.Id, userId: userToken.User.Id}, userToken);
+        });
+      }
+    }
+  });
   return $(`
         <div class="post" id="${post.Id}">
             <div class="postHeader">
                 ${post.Category}
                 ${crudIcon}
+                <div id="${post.Id + "like"}"></div>
             </div>
             <div class="postTitle"> ${post.Title} </div>
             <img class="postImage" src='${post.Image}'/>
@@ -290,8 +323,12 @@ function renderPost(post) {
                 <div class="postText" >${post.Text}</div>
             </div>
             <div class="postfooter">
-                <span postId="${post.Id}" class="moreText cmdIconXSmall fa fa-angle-double-down" title="Afficher la suite"></span>
-                <span postId="${post.Id}" class="lessText cmdIconXSmall fa fa-angle-double-up" title="Réduire..."></span>
+                <span postId="${
+                  post.Id
+                }" class="moreText cmdIconXSmall fa fa-angle-double-down" title="Afficher la suite"></span>
+                <span postId="${
+                  post.Id
+                }" class="lessText cmdIconXSmall fa fa-angle-double-up" title="Réduire..."></span>
             </div>         
         </div>
     `);
@@ -771,19 +808,19 @@ function renderConnectionForm() {
     event.preventDefault();
     let user = getFormData($("#loginForm"));
     userToken = await Accounts_API.login(user);
-    if(userToken.User.VerifyCode != "verified"){
+    sessionStorage.setItem("userToken", JSON.stringify(userToken));
+    if (userToken.User.VerifyCode != "verified") {
       renderVerifyForm(userToken.User);
-    }
-    else{
-
+    } else {
       if (!Accounts_API.error) {
         await showPosts();
-      } else showError("Une erreur est survenue! ", Accounts_API.currentHttpError);
+      } else
+        showError("Une erreur est survenue! ", Accounts_API.currentHttpError);
       VerifyIconValidity();
     }
   });
 }
-function renderVerifyForm(user){
+function renderVerifyForm(user) {
   $("#form").show();
   $("#form").empty();
   hidePosts();
@@ -800,7 +837,6 @@ function renderVerifyForm(user){
     let data = getFormData($("#verifyForm"));
     Accounts_API.Verify(data);
   });
-
 }
 async function renderUserManagementForm() {
   let users = await Accounts_API.Get(userToken);
